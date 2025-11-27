@@ -115,6 +115,36 @@ struct StubMacroTests {
 						bestFriend: bestFriend
 					)
 				}
+
+				public func stub(
+					name: String? = nil,
+					age: Int? = nil,
+					isGoodBoy: Bool? = nil,
+					favoriteToys: [String]? = nil,
+					collars: Set<String>? = nil,
+					vaccinationRecords: [String: Date]? = nil,
+					microchipID: String? = nil,
+					birthDate: Date? = nil,
+					profilePicture: Data? = nil,
+					website: URL? = nil,
+					owner: Person? = nil,
+					bestFriend: Dog? = nil
+				) -> Dog {
+					return Dog(
+						name: name ?? self.name,
+						age: age ?? self.age,
+						isGoodBoy: isGoodBoy ?? self.isGoodBoy,
+						favoriteToys: favoriteToys ?? self.favoriteToys,
+						collars: collars ?? self.collars,
+						vaccinationRecords: vaccinationRecords ?? self.vaccinationRecords,
+						microchipID: microchipID ?? self.microchipID,
+						birthDate: birthDate ?? self.birthDate,
+						profilePicture: profilePicture ?? self.profilePicture,
+						website: website ?? self.website,
+						owner: owner ?? self.owner,
+						bestFriend: bestFriend ?? self.bestFriend
+					)
+				}
 				#endif
 			}
 
@@ -158,6 +188,14 @@ struct StubMacroTests {
 						value: value
 					)
 				}
+
+				internal func stub(
+					value: String? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
 				#endif
 			}
 
@@ -199,6 +237,14 @@ struct StubMacroTests {
 				) -> Example {
 					return Example(
 						value: value
+					)
+				}
+
+				internal func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
 					)
 				}
 				#endif
@@ -250,6 +296,14 @@ struct StubMacroTests {
 				) -> Example {
 					return Example(
 						counter: counter
+					)
+				}
+
+				internal func stub(
+					counter: Int? = nil
+				) -> Example {
+					return Example(
+						counter: counter ?? self.counter
 					)
 				}
 				#endif
@@ -305,6 +359,16 @@ struct StubMacroTests {
 						name: name
 					)
 				}
+
+				internal func stub(
+					count: Int? = nil,
+					name: String? = nil
+				) -> Example {
+					return Example(
+						count: count ?? self.count,
+						name: name ?? self.name
+					)
+				}
 				#endif
 			}
 
@@ -351,6 +415,14 @@ struct StubMacroTests {
 						value: value
 					)
 				}
+
+				internal func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
 			}
 
 			extension Example {
@@ -363,6 +435,73 @@ struct StubMacroTests {
 					fileprivate init() {
 					}
 				}
+			}
+			"""
+		}
+	}
+
+	@Test func qualifiesNestedTypesWithinExtensions() {
+		assertMacro {
+			"""
+			extension MovieAPI {
+				@Stub(.public, memberwiseInit: .public)
+				public struct Page {
+					let start: Int
+					var cursor: String?
+				}
+			}
+			"""
+		} expansion: {
+			"""
+			extension MovieAPI {
+				public struct Page {
+					let start: Int
+					var cursor: String?
+
+					public init(
+						start: Int,
+						cursor: String?
+					) {
+						self.start = start
+						self.cursor = cursor
+					}
+
+					#if DEBUG
+					public static func stub(
+						start: Int = 0,
+						cursor: String? = nil
+					) -> Page {
+						return Page(
+							start: start,
+							cursor: cursor
+						)
+					}
+
+					public func stub(
+						start: Int? = nil,
+						cursor: String? = nil
+					) -> Page {
+						return Page(
+							start: start ?? self.start,
+							cursor: cursor ?? self.cursor
+						)
+					}
+					#endif
+				}
+			}
+
+			extension MovieAPI.Page {
+				#if DEBUG
+				public struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				public struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
 			}
 			"""
 		}

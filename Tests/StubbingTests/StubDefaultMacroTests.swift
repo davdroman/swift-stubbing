@@ -58,6 +58,18 @@ struct StubDefaultMacroTests {
 						website: website
 					)
 				}
+
+				public func stub(
+					value: Int? = nil,
+					label: String? = nil,
+					website: URL? = nil
+				) -> Measurement {
+					return Measurement(
+						value: value ?? self.value,
+						label: label ?? self.label,
+						website: website ?? self.website
+					)
+				}
 				#endif
 			}
 

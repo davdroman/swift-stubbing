@@ -27,16 +27,16 @@ struct StubMacro: MemberMacro {
 			)
 		}
 
-		let stubText = MemberBuilder.makeStubText(
+		let stubTexts = MemberBuilder.makeStubTexts(
 			access: configuration.stubAccess,
 			typeName: typeContext.typeNameDescription,
 			properties: storedProperties
 		)
-		let wrappedStub = try ConditionalTextBuilder.makeDecl(
-			stubText,
+		let wrappedStubs = try ConditionalTextBuilder.makeDecls(
+			stubTexts,
 			selection: configuration.buildConfigurations
 		)
-		members.append(wrappedStub)
+		members.append(contentsOf: wrappedStubs)
 
 		return members
 	}
@@ -59,11 +59,11 @@ extension StubMacro: ExtensionMacro {
 		conformingTo protocols: [TypeSyntax],
 		in context: some MacroExpansionContext
 	) throws -> [ExtensionDeclSyntax] {
-		let typeContext = try TypeContext(declaration: declaration)
 		let configuration = try StubConfiguration(attribute: attribute)
+		let typeName = type.trimmedDescription
 		let extensionDecl = try MemberBuilder.makeValuesExtension(
 			access: configuration.stubAccess,
-			typeName: typeContext.typeNameDescription,
+			typeName: typeName,
 			selection: configuration.buildConfigurations
 		)
 		return [extensionDecl]
@@ -76,12 +76,14 @@ private struct TypeContext {
 	let attributes: AttributeListSyntax?
 	let members: MemberBlockItemListSyntax
 	let name: TokenSyntax
+	let qualifiedTypeName: String
 
 	init(declaration: some DeclGroupSyntax) throws {
 		if let structDecl = declaration.as(StructDeclSyntax.self) {
 			attributes = structDecl.attributes
 			members = structDecl.memberBlock.members
 			name = structDecl.name
+			qualifiedTypeName = Self.qualifiedTypeName(from: structDecl, named: structDecl.name.text)
 			return
 		}
 
@@ -89,6 +91,7 @@ private struct TypeContext {
 			attributes = classDecl.attributes
 			members = classDecl.memberBlock.members
 			name = classDecl.name
+			qualifiedTypeName = Self.qualifiedTypeName(from: classDecl, named: classDecl.name.text)
 			return
 		}
 
@@ -153,7 +156,42 @@ private struct TypeContext {
 	}
 
 	var typeNameDescription: String {
-		name.text
+		qualifiedTypeName
+	}
+
+	private static func qualifiedTypeName(
+		from declaration: some DeclGroupSyntax,
+		named baseName: String
+	) -> String {
+		let ancestorNames = ancestorTypeNames(startingAt: Syntax(declaration).parent)
+		guard !ancestorNames.isEmpty else {
+			return baseName
+		}
+
+		return (ancestorNames.reversed() + [baseName]).joined(separator: ".")
+	}
+
+	private static func ancestorTypeNames(startingAt node: Syntax?) -> [String] {
+		var names: [String] = []
+		var current = node
+
+		while let node = current {
+			if let parentStruct = node.as(StructDeclSyntax.self) {
+				names.append(parentStruct.name.text)
+			} else if let parentClass = node.as(ClassDeclSyntax.self) {
+				names.append(parentClass.name.text)
+			} else if let parentEnum = node.as(EnumDeclSyntax.self) {
+				names.append(parentEnum.name.text)
+			} else if let parentActor = node.as(ActorDeclSyntax.self) {
+				names.append(parentActor.name.text)
+			} else if let parentExtension = node.as(ExtensionDeclSyntax.self) {
+				names.append(parentExtension.extendedType.trimmedDescription)
+			}
+
+			current = node.parent
+		}
+
+		return names
 	}
 }
 
@@ -310,19 +348,27 @@ private enum MemberBuilder {
 		""")
 	}
 
-	static func makeStubText(
+	static func makeStubTexts(
 		access: AccessModifier,
 		typeName: String,
 		properties: [StoredProperty]
-	) -> String {
-		stubFunctionText(
+	) -> [String] {
+		let staticStub = stubFunctionText(
 			access: access,
 			properties: properties,
 			returnType: typeName,
 			callType: typeName,
 			indentation: "",
 			parentTypeName: typeName
-		).trimmingCharacters(in: .whitespacesAndNewlines)
+		)
+		let instanceStub = instanceStubFunctionText(
+			access: access,
+			typeName: typeName,
+			properties: properties,
+			indentation: ""
+		)
+
+		return [staticStub, instanceStub]
 	}
 
 	static func makeValuesExtension(
@@ -397,7 +443,11 @@ private enum MemberBuilder {
 		}
 
 		let typeDescription = property.type.trimmedDescription
-		if typeDescription == parentTypeName || typeDescription == "Self" {
+		let parentBaseName = baseTypeName(from: parentTypeName)
+		if typeDescription == parentTypeName ||
+			typeDescription == "Self" ||
+			baseTypeName(from: typeDescription) == parentBaseName
+		{
 			return "\(parentTypeName).stub()"
 		}
 
@@ -500,6 +550,54 @@ private enum MemberBuilder {
 		"URL": "URL(string: \"https://example.com\")!",
 		"UUID": "UUID()",
 	]
+
+	private static func instanceStubFunctionText(
+		access: AccessModifier,
+		typeName: String,
+		properties: [StoredProperty],
+		indentation: String
+	) -> String {
+		let accessText = access.sourceText
+		let parameterIndent = indentation + "\t"
+		let argumentIndent = indentation + "\t\t"
+
+		if properties.isEmpty {
+			return """
+			\(indentation)\(accessText)func stub() -> \(typeName) {
+			\(indentation)\treturn \(typeName)()
+			\(indentation)}
+			"""
+		}
+
+		let parameterLines = properties
+			.map { "\(parameterIndent)\($0.name): \(parameterType(for: $0)) = nil" }
+			.joined(separator: ",\n")
+		let argumentLines = properties
+			.map { instancePropertyArgument(for: $0, indentation: argumentIndent) }
+			.joined(separator: ",\n")
+
+		return """
+		\(indentation)\(accessText)func stub(
+		\(parameterLines)
+		\(indentation)) -> \(typeName) {
+		\(indentation)\treturn \(typeName)(
+		\(argumentLines)
+		\(indentation)\t)
+		\(indentation)}
+		"""
+	}
+
+	private static func instancePropertyArgument(for property: StoredProperty, indentation: String) -> String {
+		"\(indentation)\(property.name): \(property.name) ?? self.\(property.name)"
+	}
+
+	private static func parameterType(for property: StoredProperty) -> String {
+		if property.type.is(OptionalTypeSyntax.self) || property.type.is(ImplicitlyUnwrappedOptionalTypeSyntax.self) {
+			return property.type.trimmedDescription
+		}
+
+		return "\(property.type.trimmedDescription)?"
+	}
 }
 
 private enum ConditionalTextBuilder {
@@ -513,6 +611,25 @@ private enum ConditionalTextBuilder {
 			indentation: ""
 		)
 		return try DeclSyntax("\n\(raw: wrapped)\n")
+	}
+
+	static func makeDecls(
+		_ contents: [String],
+		selection: BuildConfigurationSelection
+	) throws -> [DeclSyntax] {
+		switch (selection.includesDebug, selection.includesRelease) {
+		case (true, true):
+			return try contents.map { content in
+				try DeclSyntax("\n\(raw: content.trimmingCharacters(in: .whitespacesAndNewlines))\n")
+			}
+		case (true, false), (false, true):
+			let joined = contents
+				.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+				.joined(separator: "\n\n")
+			return [try makeDecl(joined, selection: selection)]
+		case (false, false):
+			throw MacroExpansionErrorMessage("@Stub build configurations must include at least .debug or .release.")
+		}
 	}
 
 	static func wrap(

@@ -17,22 +17,29 @@ public struct BuildConfigurations: OptionSet, Sendable {
 	}
 }
 
-/// Synthesizes a memberwise initializer, a static `stub` factory, and empty preview/test helper structs
+/// Synthesizes a static `stub` factory, an instance `stub` helper, and empty preview/test helper structs
 /// for use in debugging contexts.
 ///
 /// - Parameters:
 ///   - accessLevel: Visibility applied to the generated `stub` method. Defaults to `.internal`.
-///   - memberwiseInit: Visibility applied to the synthesized memberwise initializer. Defaults to `.internal`.
 ///   - in: Build configurations where the generated helpers should be emitted. Defaults to `.debug` only.
-@attached(member, names: named(init), named(stub))
+@attached(member, names: named(stub))
 @attached(extension, names: named(PreviewValues), named(TestValues))
 public macro Stub(
 	_ accessLevel: AccessLevel = .internal,
-	memberwiseInit: AccessLevel = .internal,
 	in configurations: BuildConfigurations = .debug
 ) = #externalMacro(
 	module: "StubMacro",
 	type: "StubMacro"
+)
+
+/// Synthesizes a memberwise initializer for the annotated type.
+@attached(member, names: named(init))
+public macro MemberwiseInit(
+	_ accessLevel: AccessLevel = .internal
+) = #externalMacro(
+	module: "StubMacro",
+	type: "MemberwiseInitMacro"
 )
 
 /// Overrides the default value that the enclosing `@Stub` type uses when synthesizing its `stub` method.

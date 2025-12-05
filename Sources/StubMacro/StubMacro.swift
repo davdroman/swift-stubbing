@@ -9,23 +9,9 @@ struct StubMacro: MemberMacro {
 		providingMembersOf declaration: some DeclGroupSyntax,
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
-		let typeContext = try TypeContext(declaration: declaration)
+		let typeContext = try TypeContext(declaration: declaration, macroName: "@Stub")
 		let configuration = try StubConfiguration(attribute: attribute)
 		let storedProperties = try typeContext.storedProperties()
-
-		let shouldGenerateMemberwiseInit = !typeContext.hasMemberwiseInitMacro && !storedProperties.isEmpty
-		var members: [DeclSyntax] = []
-
-		if shouldGenerateMemberwiseInit {
-			members.append(
-				DeclSyntax(
-					MemberBuilder.makeInitializer(
-						access: configuration.memberwiseInitAccess,
-						properties: storedProperties
-					)
-				)
-			)
-		}
 
 		let stubTexts = MemberBuilder.makeStubTexts(
 			access: configuration.stubAccess,
@@ -36,9 +22,7 @@ struct StubMacro: MemberMacro {
 			stubTexts,
 			selection: configuration.buildConfigurations
 		)
-		members.append(contentsOf: wrappedStubs)
-
-		return members
+		return wrappedStubs
 	}
 
 	static func expansion(
@@ -72,15 +56,13 @@ extension StubMacro: ExtensionMacro {
 
 // MARK: - Parsing
 
-private struct TypeContext {
-	let attributes: AttributeListSyntax?
+struct TypeContext {
 	let members: MemberBlockItemListSyntax
 	let name: TokenSyntax
 	let qualifiedTypeName: String
 
-	init(declaration: some DeclGroupSyntax) throws {
+	init(declaration: some DeclGroupSyntax, macroName: String) throws {
 		if let structDecl = declaration.as(StructDeclSyntax.self) {
-			attributes = structDecl.attributes
 			members = structDecl.memberBlock.members
 			name = structDecl.name
 			qualifiedTypeName = Self.qualifiedTypeName(from: structDecl, named: structDecl.name.text)
@@ -88,14 +70,13 @@ private struct TypeContext {
 		}
 
 		if let classDecl = declaration.as(ClassDeclSyntax.self) {
-			attributes = classDecl.attributes
 			members = classDecl.memberBlock.members
 			name = classDecl.name
 			qualifiedTypeName = Self.qualifiedTypeName(from: classDecl, named: classDecl.name.text)
 			return
 		}
 
-		throw MacroExpansionErrorMessage("@Stub can only be applied to structs or classes.")
+		throw MacroExpansionErrorMessage("\(macroName) can only be applied to structs or classes.")
 	}
 
 	func storedProperties() throws -> [StoredProperty] {
@@ -132,27 +113,6 @@ private struct TypeContext {
 		}
 
 		return properties
-	}
-
-	var hasMemberwiseInitMacro: Bool {
-		guard let attributes else { return false }
-
-		for element in attributes {
-			guard let attribute = element.as(AttributeSyntax.self) else { continue }
-			let attributeName = attribute.attributeName.trimmedDescription.split(separator: ".").last.map(String.init)
-
-			if attributeName == "MemberwiseInit" {
-				return true
-			}
-
-			if case let .argumentList(arguments)? = attribute.arguments,
-			   arguments.containsMemberwiseInitFlag
-			{
-				return true
-			}
-		}
-
-		return false
 	}
 
 	var typeNameDescription: String {
@@ -197,39 +157,31 @@ private struct TypeContext {
 
 private struct StubConfiguration {
 	let stubAccess: AccessModifier
-	let memberwiseInitAccess: AccessModifier
 	let buildConfigurations: BuildConfigurationSelection
 
 	init(attribute: AttributeSyntax) throws {
 		var stubAccess: AccessModifier?
-		var memberwiseAccess: AccessModifier?
 		var buildConfigurations = BuildConfigurationSelection(debug: true, release: false)
 
 		if case let .argumentList(arguments)? = attribute.arguments {
 			for argument in arguments {
-				if let label = argument.label, label.text == "memberwiseInit" {
-					memberwiseAccess = try AccessModifier.parse(from: argument.expression)
-					continue
-				}
-
 				if let label = argument.label, label.text == "in" {
 					buildConfigurations = try BuildConfigurationSelection.parse(from: argument.expression)
 					continue
 				}
 
 				if stubAccess == nil {
-					stubAccess = try AccessModifier.parse(from: argument.expression)
+					stubAccess = try AccessModifier.parse(from: argument.expression, macroName: "@Stub")
 				}
 			}
 		}
 
 		self.stubAccess = stubAccess ?? .internal
-		memberwiseInitAccess = memberwiseAccess ?? .internal
 		self.buildConfigurations = buildConfigurations
 	}
 }
 
-private enum AccessModifier: String {
+enum AccessModifier: String {
 	case `public`
 	case `internal`
 	case `package`
@@ -240,7 +192,7 @@ private enum AccessModifier: String {
 		rawValue + " "
 	}
 
-	static func parse(from expression: ExprSyntax) throws -> AccessModifier {
+	static func parse(from expression: ExprSyntax, macroName: String) throws -> AccessModifier {
 		let description = expression.trimmedDescription
 		let candidates = description
 			.split(separator: ".")
@@ -248,14 +200,14 @@ private enum AccessModifier: String {
 			.filter { !$0.isEmpty }
 
 		guard let value = candidates.last, let modifier = AccessModifier(rawValue: value) else {
-			throw MacroExpansionErrorMessage("Unsupported access level '\(description)' in @Stub.")
+			throw MacroExpansionErrorMessage("Unsupported access level '\(description)' in \(macroName).")
 		}
 
 		return modifier
 	}
 }
 
-private struct BuildConfigurationSelection {
+struct BuildConfigurationSelection {
 	let includesDebug: Bool
 	let includesRelease: Bool
 
@@ -304,7 +256,7 @@ private struct BuildConfigurationSelection {
 	}
 }
 
-private struct StoredProperty {
+struct StoredProperty {
 	let name: String
 	let type: TypeSyntax
 	let defaultValue: ExprSyntax?
@@ -321,7 +273,7 @@ private struct StoredProperty {
 	}
 }
 
-private enum MemberBuilder {
+enum MemberBuilder {
 	static func makeInitializer(access: AccessModifier, properties: [StoredProperty]) -> DeclSyntax {
 		let modifier = access.sourceText
 		let parameterLines = properties
@@ -610,7 +562,7 @@ private enum ConditionalTextBuilder {
 			selection: selection,
 			indentation: ""
 		)
-		return try DeclSyntax("\n\(raw: wrapped)\n")
+		return DeclSyntax("\n\(raw: wrapped)\n")
 	}
 
 	static func makeDecls(
@@ -619,8 +571,8 @@ private enum ConditionalTextBuilder {
 	) throws -> [DeclSyntax] {
 		switch (selection.includesDebug, selection.includesRelease) {
 		case (true, true):
-			return try contents.map { content in
-				try DeclSyntax("\n\(raw: content.trimmingCharacters(in: .whitespacesAndNewlines))\n")
+			return contents.map { content in
+				DeclSyntax("\n\(raw: content.trimmingCharacters(in: .whitespacesAndNewlines))\n")
 			}
 		case (true, false), (false, true):
 			let joined = contents
@@ -712,19 +664,5 @@ extension AttributeSyntax {
 		}
 
 		return String(name) == target
-	}
-}
-
-extension LabeledExprListSyntax {
-	fileprivate var containsMemberwiseInitFlag: Bool {
-		for argument in self {
-			guard argument.label?.text == "memberwiseInit" else { continue }
-			guard let literal = argument.expression.as(BooleanLiteralExprSyntax.self) else { continue }
-			if literal.literal.tokenKind == .keyword(.true) {
-				return true
-			}
-		}
-
-		return false
 	}
 }

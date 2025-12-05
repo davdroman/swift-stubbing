@@ -6,7 +6,6 @@ Can be applied to structs and classes.
 
 @Stub two params:
 	- An access level (e.g. `.public`, `.internal`, etc) which may be ommited defaulting to `.internal`
-	- A "memberwiseInit" access level param which may be ommited defaulting to `.internal` also.
 	- An optional `in` parameter that specifies the `BuildConfigurations` where the generated helpers should be emitted. Defaults to `.debug`.
 
 ```swift
@@ -15,8 +14,6 @@ public struct BuildConfigurations: OptionSet, Sendable {
 	public static let release: BuildConfigurations
 }
 ```
-
-Important: if there are any other macros attached to the model that are either called "@MemberwiseInit" or have a "memberwiseInit: true" param, we assume a memberwise init already exists for all stored properties and we do not generate one.
 
 @Stub generates two things:
 	1. A static `stub` function that returns a pre-defined instance of the type. The stub function can take parameters to override specific properties of the stubbed instance. By pre-defined instance, we mean that for each property type we have a default value. For example, String properties default to "", Int properties default to 0, Bool properties default to false, and so on. For custom types, we assume they also have a `stub` function that can be called to get a default instance.
@@ -31,7 +28,8 @@ Make sure to cover all the following built-in types and any others you can think
 Tip: you may use these as inspo for test cases.
 
 ```swift
-@Stub(.public, memberwiseInit: .public)
+@MemberwiseInit(.public)
+@Stub(.public)
 public struct Dog {
 	public var name: String
 	public var age: Int
@@ -119,7 +117,8 @@ extension Dog {
 }
 
 // Always emit helpers
-@Stub(.public, memberwiseInit: .public, in: [.debug, .release])
+@MemberwiseInit(.public)
+@Stub(.public, in: [.debug, .release])
 public struct AlwaysAvailableDog {
 	// ... definitions ...
 }
@@ -209,5 +208,9 @@ extension Example.TestValues {
 }
 #endif
 ```
+
+## @MemberwiseInit macro
+
+Apply `@MemberwiseInit` to structs or classes when you want the macro system to synthesize a memberwise initializer. The macro accepts an optional access level parameter (defaults to `.internal`) and always mirrors the stored properties declared in the type, using their default values where specified. Combine it with `@Stub` when you need both initializers and stub helpers.
 
 Match the access level of the nested structs to that of the @Stub annotation, and wrap any extensions in the same build-configuration checks unless the stub is emitted for release builds.

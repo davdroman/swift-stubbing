@@ -19,7 +19,7 @@ struct StubDefaultMacroTests {
 			"""
 			import Foundation
 
-			@Stub(.public, memberwiseInit: .public)
+			@Stub(.public)
 			public struct Measurement {
 				@StubDefault(42)
 				public var value: Int
@@ -35,16 +35,6 @@ struct StubDefaultMacroTests {
 				public var value: Int
 				public var label: String
 				public var website: URL
-
-				public init(
-					value: Int,
-					label: String,
-					website: URL
-				) {
-					self.value = value
-					self.label = label
-					self.website = website
-				}
 
 				#if DEBUG
 				public static func stub(

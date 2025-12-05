@@ -11,7 +11,7 @@ import Testing
 	)
 )
 struct StubMacroTests {
-	@Test func generatesMemberwiseInitializerAndStub() {
+	@Test func generatesStubHelpers() {
 		assertMacro {
 			"""
 			import Foundation
@@ -20,7 +20,7 @@ struct StubMacroTests {
 				static func stub() -> Person { .init(name: "", age: 0) }
 			}
 
-			@Stub(.public, memberwiseInit: .public)
+			@Stub(.public)
 			public struct Dog {
 				public var name: String
 				public var age: Int
@@ -56,34 +56,6 @@ struct StubMacroTests {
 				public var website: URL
 				public var owner: Person
 				public var bestFriend: Dog?
-
-				public init(
-					name: String,
-					age: Int,
-					isGoodBoy: Bool,
-					favoriteToys: [String],
-					collars: Set<String>,
-					vaccinationRecords: [String: Date],
-					microchipID: String?,
-					birthDate: Date,
-					profilePicture: Data,
-					website: URL,
-					owner: Person,
-					bestFriend: Dog?
-				) {
-					self.name = name
-					self.age = age
-					self.isGoodBoy = isGoodBoy
-					self.favoriteToys = favoriteToys
-					self.collars = collars
-					self.vaccinationRecords = vaccinationRecords
-					self.microchipID = microchipID
-					self.birthDate = birthDate
-					self.profilePicture = profilePicture
-					self.website = website
-					self.owner = owner
-					self.bestFriend = bestFriend
-				}
 
 				#if DEBUG
 				public static func stub(
@@ -165,108 +137,6 @@ struct StubMacroTests {
 		}
 	}
 
-	@Test func skipsMemberwiseInitWhenExplicitMacroExists() {
-		assertMacro {
-			"""
-			@Stub
-			@MemberwiseInit
-			struct Example {
-				var value: String
-			}
-			"""
-		} expansion: {
-			"""
-			@MemberwiseInit
-			struct Example {
-				var value: String
-
-				#if DEBUG
-				internal static func stub(
-					value: String = ""
-				) -> Example {
-					return Example(
-						value: value
-					)
-				}
-
-				internal func stub(
-					value: String? = nil
-				) -> Example {
-					return Example(
-						value: value ?? self.value
-					)
-				}
-				#endif
-			}
-
-			extension Example {
-				#if DEBUG
-				internal struct PreviewValues {
-					fileprivate init() {
-					}
-				}
-
-				internal struct TestValues {
-					fileprivate init() {
-					}
-				}
-				#endif
-			}
-			"""
-		}
-	}
-
-	@Test func skipsMemberwiseInitWhenMemberwiseFlagIsPresent() {
-		assertMacro {
-			"""
-			@Stub
-			@Tracker(memberwiseInit: true)
-			struct Example {
-				var value: Int
-			}
-			"""
-		} expansion: {
-			"""
-			@Tracker(memberwiseInit: true)
-			struct Example {
-				var value: Int
-
-				#if DEBUG
-				internal static func stub(
-					value: Int = 0
-				) -> Example {
-					return Example(
-						value: value
-					)
-				}
-
-				internal func stub(
-					value: Int? = nil
-				) -> Example {
-					return Example(
-						value: value ?? self.value
-					)
-				}
-				#endif
-			}
-
-			extension Example {
-				#if DEBUG
-				internal struct PreviewValues {
-					fileprivate init() {
-					}
-				}
-
-				internal struct TestValues {
-					fileprivate init() {
-					}
-				}
-				#endif
-			}
-			"""
-		}
-	}
-
 	@Test func includesPropertiesWithObservers() {
 		assertMacro {
 			"""
@@ -282,12 +152,6 @@ struct StubMacroTests {
 			struct Example {
 				var counter: Int = 0 {
 					didSet { print(counter) }
-				}
-
-				internal init(
-					counter: Int = 0
-				) {
-					self.counter = counter
 				}
 
 				#if DEBUG
@@ -326,69 +190,6 @@ struct StubMacroTests {
 		}
 	}
 
-	@Test func memberwiseInitializerUsesPropertyDefaults() {
-		assertMacro {
-			"""
-			@Stub
-			struct Example {
-				var count: Int = 3
-				var name: String? = nil
-			}
-			"""
-		} expansion: {
-			"""
-			struct Example {
-				var count: Int = 3
-				var name: String? = nil
-
-				internal init(
-					count: Int = 3,
-					name: String? = nil
-				) {
-					self.count = count
-					self.name = name
-				}
-
-				#if DEBUG
-				internal static func stub(
-					count: Int = 0,
-					name: String? = nil
-				) -> Example {
-					return Example(
-						count: count,
-						name: name
-					)
-				}
-
-				internal func stub(
-					count: Int? = nil,
-					name: String? = nil
-				) -> Example {
-					return Example(
-						count: count ?? self.count,
-						name: name ?? self.name
-					)
-				}
-				#endif
-			}
-
-			extension Example {
-				#if DEBUG
-				internal struct PreviewValues {
-					fileprivate init() {
-					}
-				}
-
-				internal struct TestValues {
-					fileprivate init() {
-					}
-				}
-				#endif
-			}
-			"""
-		}
-	}
-
 	@Test func emitsInAllBuildsWhenRequested() {
 		assertMacro {
 			"""
@@ -401,12 +202,6 @@ struct StubMacroTests {
 			"""
 			struct Example {
 				var value: Int
-
-				internal init(
-					value: Int
-				) {
-					self.value = value
-				}
 
 				internal static func stub(
 					value: Int = 0
@@ -444,7 +239,7 @@ struct StubMacroTests {
 		assertMacro {
 			"""
 			extension MovieAPI {
-				@Stub(.public, memberwiseInit: .public)
+				@Stub(.public)
 				public struct Page {
 					let start: Int
 					var cursor: String?
@@ -457,14 +252,6 @@ struct StubMacroTests {
 				public struct Page {
 					let start: Int
 					var cursor: String?
-
-					public init(
-						start: Int,
-						cursor: String?
-					) {
-						self.start = start
-						self.cursor = cursor
-					}
 
 					#if DEBUG
 					public static func stub(

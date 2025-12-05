@@ -10,7 +10,10 @@ struct StubMacro: MemberMacro {
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
 		let typeContext = try TypeContext(declaration: declaration, macroName: "@Stub")
-		let configuration = try StubConfiguration(attribute: attribute)
+		let configuration = try StubConfiguration(
+			attribute: attribute,
+			typeAccess: typeContext.accessModifier
+		)
 		let storedProperties = try typeContext.storedProperties()
 
 		let stubTexts = MemberBuilder.makeStubTexts(
@@ -43,7 +46,11 @@ extension StubMacro: ExtensionMacro {
 		conformingTo protocols: [TypeSyntax],
 		in context: some MacroExpansionContext
 	) throws -> [ExtensionDeclSyntax] {
-		let configuration = try StubConfiguration(attribute: attribute)
+		let typeContext = try TypeContext(declaration: declaration, macroName: "@Stub")
+		let configuration = try StubConfiguration(
+			attribute: attribute,
+			typeAccess: typeContext.accessModifier
+		)
 		let typeName = type.trimmedDescription
 		let extensionDecl = try MemberBuilder.makeValuesExtension(
 			access: configuration.stubAccess,
@@ -162,7 +169,7 @@ private struct StubConfiguration {
 	let stubAccess: AccessModifier
 	let buildConfigurations: BuildConfigurationSelection
 
-	init(attribute: AttributeSyntax) throws {
+	init(attribute: AttributeSyntax, typeAccess: AccessModifier) throws {
 		var stubAccess: AccessModifier?
 		var buildConfigurations = BuildConfigurationSelection(debug: true, release: false)
 
@@ -179,7 +186,7 @@ private struct StubConfiguration {
 			}
 		}
 
-		self.stubAccess = stubAccess ?? .internal
+		self.stubAccess = stubAccess ?? typeAccess
 		self.buildConfigurations = buildConfigurations
 	}
 }

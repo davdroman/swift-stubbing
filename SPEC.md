@@ -4,9 +4,9 @@
 
 Can be applied to structs and classes.
 
-@Stub two params:
-	- An access level (e.g. `.public`, `.internal`, etc) which may be ommited defaulting to `.internal`
-	- An optional `in` parameter that specifies the `BuildConfigurations` where the generated helpers should be emitted. Defaults to `.debug`.
+@Stub supports two invocation styles:
+	- `@Stub` inherits the access level of the annotated type and optionally accepts an `in:` parameter specifying the `BuildConfigurations` where the generated helpers should be emitted. Defaults to `.debug`.
+	- `@Stub(.public, in: [.debug, .release])` overrides the access level of the synthesized helpers while still supporting the same `in:` argument.
 
 ```swift
 public struct BuildConfigurations: OptionSet, Sendable {
@@ -29,7 +29,7 @@ Tip: you may use these as inspo for test cases.
 
 ```swift
 @MemberwiseInit
-@Stub(.public)
+@Stub
 public struct Dog {
 	public var name: String
 	public var age: Int
@@ -118,7 +118,7 @@ extension Dog {
 
 // Always emit helpers
 @MemberwiseInit
-@Stub(.public, in: [.debug, .release])
+@Stub(in: [.debug, .release])
 public struct AlwaysAvailableDog {
 	// ... definitions ...
 }

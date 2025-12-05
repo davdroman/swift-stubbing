@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import Stubbing
 
-@MemberwiseInit(.public)
-@Stub(.public, in: [.debug, .release])
+@MemberwiseInit
+@Stub(in: [.debug, .release])
 struct Person {
 	var name: String
 	var age: Int
@@ -15,8 +15,8 @@ struct Measurement {
 	var value: Int
 }
 
-@MemberwiseInit(.public)
-@Stub(.public, in: [.debug, .release])
+@MemberwiseInit
+@Stub(in: [.debug, .release])
 final class Dog {
 	var name: String
 	var age: Int

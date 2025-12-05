@@ -19,7 +19,7 @@ struct StubDefaultMacroTests {
 			"""
 			import Foundation
 
-			@Stub(.public)
+			@Stub
 			public struct Measurement {
 				@StubDefault(42)
 				public var value: Int

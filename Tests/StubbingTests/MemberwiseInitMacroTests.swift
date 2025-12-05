@@ -210,7 +210,7 @@ struct MemberwiseInitMacroTests {
 		assertMacro {
 			"""
 			@MemberwiseInit(.public)
-			@Stub(.public)
+			@Stub
 			public struct Widget {
 				public var value: Int
 			}

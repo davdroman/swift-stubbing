@@ -20,7 +20,7 @@ struct StubMacroTests {
 				static func stub() -> Person { .init(name: "", age: 0) }
 			}
 
-			@Stub(.public)
+			@Stub
 			public struct Dog {
 				public var name: String
 				public var age: Int
@@ -278,6 +278,349 @@ struct StubMacroTests {
 			}
 
 			extension MovieAPI.Page {
+				#if DEBUG
+				public struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				public struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func inheritsImplicitInternalAccess() {
+		assertMacro {
+			"""
+			@Stub
+			struct Example {
+				var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			struct Example {
+				var value: Int
+
+				#if DEBUG
+				internal static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				internal func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
+				#if DEBUG
+				internal struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				internal struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func inheritsExplicitInternalAccess() {
+		assertMacro {
+			"""
+			@Stub
+			internal struct Example {
+				var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			internal struct Example {
+				var value: Int
+
+				#if DEBUG
+				internal static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				internal func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
+				#if DEBUG
+				internal struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				internal struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func inheritsPackageAccess() {
+		assertMacro {
+			"""
+			@Stub
+			package struct Example {
+				var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			package struct Example {
+				var value: Int
+
+				#if DEBUG
+				package static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				package func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
+				#if DEBUG
+				package struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				package struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func inheritsFileprivateAccess() {
+		assertMacro {
+			"""
+			@Stub
+			fileprivate struct Example {
+				var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			fileprivate struct Example {
+				var value: Int
+
+				#if DEBUG
+				fileprivate static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				fileprivate func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
+				#if DEBUG
+				fileprivate struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				fileprivate struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func inheritsPrivateAccess() {
+		assertMacro {
+			"""
+			@Stub
+			private struct Example {
+				var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			private struct Example {
+				var value: Int
+
+				#if DEBUG
+				private static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				private func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
+				#if DEBUG
+				private struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				private struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func inheritsPublicAccess() {
+		assertMacro {
+			"""
+			@Stub
+			public struct Example {
+				public var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			public struct Example {
+				public var value: Int
+
+				#if DEBUG
+				public static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				public func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
+				#if DEBUG
+				public struct PreviewValues {
+					fileprivate init() {
+					}
+				}
+
+				public struct TestValues {
+					fileprivate init() {
+					}
+				}
+				#endif
+			}
+			"""
+		}
+	}
+
+	@Test func respectsExplicitAccessOverride() {
+		assertMacro {
+			"""
+			@Stub(.public)
+			struct Example {
+				var value: Int
+			}
+			"""
+		} expansion: {
+			"""
+			struct Example {
+				var value: Int
+
+				#if DEBUG
+				public static func stub(
+					value: Int = 0
+				) -> Example {
+					return Example(
+						value: value
+					)
+				}
+
+				public func stub(
+					value: Int? = nil
+				) -> Example {
+					return Example(
+						value: value ?? self.value
+					)
+				}
+				#endif
+			}
+
+			extension Example {
 				#if DEBUG
 				public struct PreviewValues {
 					fileprivate init() {

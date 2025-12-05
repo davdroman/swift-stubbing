@@ -18,15 +18,24 @@ public struct BuildConfigurations: OptionSet, Sendable {
 }
 
 /// Synthesizes a static `stub` factory, an instance `stub` helper, and empty preview/test helper structs
-/// for use in debugging contexts.
+/// for use in debugging contexts. When no access level is provided, the generated APIs match the access
+/// level of the annotated type.
 ///
-/// - Parameters:
-///   - accessLevel: Visibility applied to the generated `stub` method. Defaults to `.internal`.
-///   - in: Build configurations where the generated helpers should be emitted. Defaults to `.debug` only.
+/// - Parameter configurations: Build configurations where the generated helpers should be emitted. Defaults to `.debug` only.
 @attached(member, names: named(stub))
 @attached(extension, names: named(PreviewValues), named(TestValues))
 public macro Stub(
-	_ accessLevel: AccessLevel = .internal,
+	in configurations: BuildConfigurations = .debug
+) = #externalMacro(
+	module: "StubMacro",
+	type: "StubMacro"
+)
+
+/// Synthesizes stub helpers with an explicit access level override.
+@attached(member, names: named(stub))
+@attached(extension, names: named(PreviewValues), named(TestValues))
+public macro Stub(
+	_ accessLevel: AccessLevel,
 	in configurations: BuildConfigurations = .debug
 ) = #externalMacro(
 	module: "StubMacro",

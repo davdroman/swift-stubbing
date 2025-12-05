@@ -28,7 +28,7 @@ Make sure to cover all the following built-in types and any others you can think
 Tip: you may use these as inspo for test cases.
 
 ```swift
-@MemberwiseInit(.public)
+@MemberwiseInit
 @Stub(.public)
 public struct Dog {
 	public var name: String
@@ -117,7 +117,7 @@ extension Dog {
 }
 
 // Always emit helpers
-@MemberwiseInit(.public)
+@MemberwiseInit
 @Stub(.public, in: [.debug, .release])
 public struct AlwaysAvailableDog {
 	// ... definitions ...
@@ -211,6 +211,6 @@ extension Example.TestValues {
 
 ## @MemberwiseInit macro
 
-Apply `@MemberwiseInit` to structs or classes when you want the macro system to synthesize a memberwise initializer. The macro accepts an optional access level parameter (defaults to `.internal`) and always mirrors the stored properties declared in the type, using their default values where specified. Combine it with `@Stub` when you need both initializers and stub helpers.
+Apply `@MemberwiseInit` with no arguments to synthesize a memberwise initializer that matches the access level of the annotated type. Pass an explicit argument (e.g. `@MemberwiseInit(.public)`) when you need to override the synthesized initializer's visibility. The macro always mirrors the stored properties declared in the type, using their default values where specified. Combine it with `@Stub` when you need both initializers and stub helpers.
 
 Match the access level of the nested structs to that of the @Stub annotation, and wrap any extensions in the same build-configuration checks unless the stub is emitted for release builds.

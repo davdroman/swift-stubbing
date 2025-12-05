@@ -33,10 +33,17 @@ public macro Stub(
 	type: "StubMacro"
 )
 
-/// Synthesizes a memberwise initializer for the annotated type.
+/// Synthesizes a memberwise initializer matching the access level of the annotated type.
+@attached(member, names: named(init))
+public macro MemberwiseInit() = #externalMacro(
+	module: "StubMacro",
+	type: "MemberwiseInitMacro"
+)
+
+/// Synthesizes a memberwise initializer that uses a custom access level.
 @attached(member, names: named(init))
 public macro MemberwiseInit(
-	_ accessLevel: AccessLevel = .internal
+	_ accessLevel: AccessLevel
 ) = #externalMacro(
 	module: "StubMacro",
 	type: "MemberwiseInitMacro"

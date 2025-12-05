@@ -13,7 +13,10 @@ struct MemberwiseInitMacro: MemberMacro {
 			return []
 		}
 
-		let configuration = try MemberwiseInitConfiguration(attribute: attribute)
+		let configuration = try MemberwiseInitConfiguration(
+			attribute: attribute,
+			typeAccess: typeContext.accessModifier
+		)
 		return [
 			DeclSyntax(
 				MemberBuilder.makeInitializer(
@@ -37,7 +40,7 @@ struct MemberwiseInitMacro: MemberMacro {
 private struct MemberwiseInitConfiguration {
 	let access: AccessModifier
 
-	init(attribute: AttributeSyntax) throws {
+	init(attribute: AttributeSyntax, typeAccess: AccessModifier) throws {
 		var memberwiseAccess: AccessModifier?
 
 		if case let .argumentList(arguments)? = attribute.arguments {
@@ -47,6 +50,6 @@ private struct MemberwiseInitConfiguration {
 			}
 		}
 
-		self.access = memberwiseAccess ?? .internal
+		self.access = memberwiseAccess ?? typeAccess
 	}
 }

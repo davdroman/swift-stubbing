@@ -60,12 +60,14 @@ struct TypeContext {
 	let members: MemberBlockItemListSyntax
 	let name: TokenSyntax
 	let qualifiedTypeName: String
+	let accessModifier: AccessModifier
 
 	init(declaration: some DeclGroupSyntax, macroName: String) throws {
 		if let structDecl = declaration.as(StructDeclSyntax.self) {
 			members = structDecl.memberBlock.members
 			name = structDecl.name
 			qualifiedTypeName = Self.qualifiedTypeName(from: structDecl, named: structDecl.name.text)
+			accessModifier = AccessModifier.fromDeclModifiers(structDecl.modifiers) ?? .internal
 			return
 		}
 
@@ -73,6 +75,7 @@ struct TypeContext {
 			members = classDecl.memberBlock.members
 			name = classDecl.name
 			qualifiedTypeName = Self.qualifiedTypeName(from: classDecl, named: classDecl.name.text)
+			accessModifier = AccessModifier.fromDeclModifiers(classDecl.modifiers) ?? .internal
 			return
 		}
 
@@ -204,6 +207,27 @@ enum AccessModifier: String {
 		}
 
 		return modifier
+	}
+
+	static func fromDeclModifiers(_ modifiers: DeclModifierListSyntax?) -> AccessModifier? {
+		guard let modifiers else { return nil }
+		for modifier in modifiers {
+			switch modifier.name.tokenKind {
+			case .keyword(.public):
+				return .public
+			case .keyword(.internal):
+				return .internal
+			case .keyword(.package):
+				return .package
+			case .keyword(.fileprivate):
+				return .fileprivate
+			case .keyword(.private):
+				return .private
+			default:
+				continue
+			}
+		}
+		return nil
 	}
 }
 

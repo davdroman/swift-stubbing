@@ -14,7 +14,7 @@ import Testing
 	)
 )
 struct MemberwiseInitMacroTests {
-	@Test func generatesMemberwiseInitializer() {
+	@Test func respectsExplicitAccessOverride() {
 		assertMacro {
 			"""
 			@MemberwiseInit(.public)
@@ -41,6 +41,29 @@ struct MemberwiseInitMacroTests {
 		}
 	}
 
+	@Test func defaultsToAttacheeAccess() {
+		assertMacro {
+			"""
+			@MemberwiseInit
+			public struct Example {
+				public var name: String
+			}
+			"""
+		} expansion: {
+			"""
+			public struct Example {
+				public var name: String
+
+				public init(
+					name: String
+				) {
+					self.name = name
+				}
+			}
+			"""
+		}
+	}
+
 	@Test func usesPropertyDefaults() {
 		assertMacro {
 			"""
@@ -61,6 +84,121 @@ struct MemberwiseInitMacroTests {
 					name: String? = nil
 				) {
 					self.count = count
+					self.name = name
+				}
+			}
+			"""
+		}
+	}
+
+	@Test func mirrorsImplicitInternalAccess() {
+		assertMacro {
+			"""
+			@MemberwiseInit
+			struct Example {
+				var name: String
+			}
+			"""
+		} expansion: {
+			"""
+			struct Example {
+				var name: String
+
+				internal init(
+					name: String
+				) {
+					self.name = name
+				}
+			}
+			"""
+		}
+	}
+
+	@Test func mirrorsExplicitInternalAccess() {
+		assertMacro {
+			"""
+			@MemberwiseInit
+			internal struct Example {
+				var name: String
+			}
+			"""
+		} expansion: {
+			"""
+			internal struct Example {
+				var name: String
+
+				internal init(
+					name: String
+				) {
+					self.name = name
+				}
+			}
+			"""
+		}
+	}
+
+	@Test func mirrorsPackageAccess() {
+		assertMacro {
+			"""
+			@MemberwiseInit
+			package struct Example {
+				var name: String
+			}
+			"""
+		} expansion: {
+			"""
+			package struct Example {
+				var name: String
+
+				package init(
+					name: String
+				) {
+					self.name = name
+				}
+			}
+			"""
+		}
+	}
+
+	@Test func mirrorsFileprivateAccess() {
+		assertMacro {
+			"""
+			@MemberwiseInit
+			fileprivate struct Example {
+				var name: String
+			}
+			"""
+		} expansion: {
+			"""
+			fileprivate struct Example {
+				var name: String
+
+				fileprivate init(
+					name: String
+				) {
+					self.name = name
+				}
+			}
+			"""
+		}
+	}
+
+	@Test func mirrorsPrivateAccess() {
+		assertMacro {
+			"""
+			@MemberwiseInit
+			private struct Example {
+				var name: String
+			}
+			"""
+		} expansion: {
+			"""
+			private struct Example {
+				var name: String
+
+				private init(
+					name: String
+				) {
 					self.name = name
 				}
 			}

@@ -21,11 +21,10 @@ struct StubMacro: MemberMacro {
 			typeName: typeContext.typeNameDescription,
 			properties: storedProperties
 		)
-		let wrappedStubs = try ConditionalTextBuilder.makeDecls(
+		return try ConditionalTextBuilder.makeDecls(
 			stubTexts,
 			selection: configuration.buildConfigurations
 		)
-		return wrappedStubs
 	}
 
 	static func expansion(
@@ -609,7 +608,7 @@ private enum ConditionalTextBuilder {
 			let joined = contents
 				.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 				.joined(separator: "\n\n")
-			return [try makeDecl(joined, selection: selection)]
+			return try [makeDecl(joined, selection: selection)]
 		case (false, false):
 			throw MacroExpansionErrorMessage("@Stub build configurations must include at least .debug or .release.")
 		}
@@ -647,7 +646,7 @@ extension AccessorBlockSyntax {
 		case let .accessors(accessors):
 			for accessor in accessors {
 				let specifier = accessor.accessorSpecifier.tokenKind
-				if specifier != .keyword(.willSet) && specifier != .keyword(.didSet) {
+				if specifier != .keyword(.willSet), specifier != .keyword(.didSet) {
 					return false
 				}
 			}

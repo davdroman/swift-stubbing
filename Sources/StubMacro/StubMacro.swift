@@ -426,7 +426,8 @@ enum MemberBuilder {
 
 		let typeDescription = property.type.trimmedDescription
 		let parentBaseName = baseTypeName(from: parentTypeName)
-		if typeDescription == parentTypeName ||
+		if
+			typeDescription == parentTypeName ||
 			typeDescription == "Self" ||
 			baseTypeName(from: typeDescription) == parentBaseName
 		{
@@ -665,9 +666,10 @@ extension AttributeListSyntax {
 			guard let attribute = element.as(AttributeSyntax.self) else { continue }
 			guard attribute.matches(name: "StubDefault") else { continue }
 
-			guard case let .argumentList(arguments)? = attribute.arguments,
-			      arguments.count == 1,
-			      let expression = arguments.first?.expression
+			guard
+				case let .argumentList(arguments)? = attribute.arguments,
+				arguments.count == 1,
+				let expression = arguments.first?.expression
 			else {
 				throw MacroExpansionErrorMessage(
 					"@StubDefault applied to '\(propertyName)' must supply exactly one value."

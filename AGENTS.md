@@ -1,1 +1,0 @@
-/Users/davdroman/Developer/davdroman/agents-md/swift-macro/AGENTS.md

@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Lint:
+  lint:
+    name: Lint
     runs-on: macos-latest
     steps:
       - name: Git Checkout
@@ -28,6 +29,7 @@ jobs:
 
       - name: SwiftFormat Lint
         run: swiftformat --lint . --reporter github-actions-log
+
   apple:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.title, '[skip ci]')
     name: ${{ matrix.platform }} (Swift ${{ matrix.swift }})

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 
 import CompilerPluginSupport
 import PackageDescription
@@ -16,7 +16,6 @@ let package = Package(
 	products: [
 		.library(name: "Stubbing", targets: ["Stubbing"]),
 	],
-	dependencies: [],
 	targets: [
 		.target(
 			name: "Stubbing",
@@ -37,7 +36,6 @@ let package = Package(
 				"Stubbing",
 				"StubMacro",
 				.product(name: "MacroTesting", package: "swift-macro-testing"),
-				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 			]
 		),
 	]
@@ -45,7 +43,7 @@ let package = Package(
 
 package.dependencies += [
 	.package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.0"),
-	.package(url: "https://github.com/swiftlang/swift-syntax", "600.0.0"..<"603.0.0"),
+	.package(url: "https://github.com/swiftlang/swift-syntax", "601.0.0"..<"603.0.0"),
 ]
 
 for target in package.targets {
@@ -53,5 +51,6 @@ for target in package.targets {
 	target.swiftSettings? += [
 		.enableUpcomingFeature("ExistentialAny"),
 		.enableUpcomingFeature("InternalImportsByDefault"),
+		.enableUpcomingFeature("MemberImportVisibility"),
 	]
 }

@@ -12,8 +12,8 @@ import Testing
 			"StubDefault": StubDefaultMacro.self,
 		],
 		indentationWidth: .tab,
-		record: .missing
-	)
+		record: .missing,
+	),
 )
 struct StubDefaultMacroTests {
 	@Test func generatesCustomDefaultsInHelpers() {

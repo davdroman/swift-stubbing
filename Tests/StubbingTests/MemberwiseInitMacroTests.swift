@@ -12,8 +12,8 @@ import Testing
 			"Stub": StubMacro.self,
 		],
 		indentationWidth: .tab,
-		record: .missing
-	)
+		record: .missing,
+	),
 )
 struct MemberwiseInitMacroTests {
 	@Test func respectsExplicitAccessOverride() {

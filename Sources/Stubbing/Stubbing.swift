@@ -25,10 +25,10 @@ public struct BuildConfigurations: OptionSet, Sendable {
 @attached(member, names: named(stub))
 @attached(extension, names: named(PreviewValues), named(TestValues))
 public macro Stub(
-	in configurations: BuildConfigurations = .debug
+	in configurations: BuildConfigurations = .debug,
 ) = #externalMacro(
 	module: "StubMacro",
-	type: "StubMacro"
+	type: "StubMacro",
 )
 
 /// Synthesizes stub helpers with an explicit access level override.
@@ -36,31 +36,31 @@ public macro Stub(
 @attached(extension, names: named(PreviewValues), named(TestValues))
 public macro Stub(
 	_ accessLevel: AccessLevel,
-	in configurations: BuildConfigurations = .debug
+	in configurations: BuildConfigurations = .debug,
 ) = #externalMacro(
 	module: "StubMacro",
-	type: "StubMacro"
+	type: "StubMacro",
 )
 
 /// Synthesizes a memberwise initializer matching the access level of the annotated type.
 @attached(member, names: named(init))
 public macro MemberwiseInit() = #externalMacro(
 	module: "StubMacro",
-	type: "MemberwiseInitMacro"
+	type: "MemberwiseInitMacro",
 )
 
 /// Synthesizes a memberwise initializer that uses a custom access level.
 @attached(member, names: named(init))
 public macro MemberwiseInit(
-	_ accessLevel: AccessLevel
+	_ accessLevel: AccessLevel,
 ) = #externalMacro(
 	module: "StubMacro",
-	type: "MemberwiseInitMacro"
+	type: "MemberwiseInitMacro",
 )
 
 /// Overrides the default value that the enclosing `@Stub` type uses when synthesizing its `stub` method.
 @attached(peer)
 public macro StubDefault<T>(_ value: T) = #externalMacro(
 	module: "StubMacro",
-	type: "StubDefaultMacro"
+	type: "StubDefaultMacro",
 )

@@ -9,8 +9,8 @@ import Testing
 	.macros(
 		["Stub": StubMacro.self],
 		indentationWidth: .tab,
-		record: .missing
-	)
+		record: .missing,
+	),
 )
 struct StubMacroTests {
 	@Test func generatesStubHelpers() {

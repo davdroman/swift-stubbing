@@ -21,14 +21,14 @@ let package = Package(
 			name: "Stubbing",
 			dependencies: [
 				"StubMacro",
-			]
+			],
 		),
 		.macro(
 			name: "StubMacro",
 			dependencies: [
 				.product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
 				.product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-			]
+			],
 		),
 		.testTarget(
 			name: "StubbingTests",
@@ -36,9 +36,9 @@ let package = Package(
 				"Stubbing",
 				"StubMacro",
 				.product(name: "MacroTesting", package: "swift-macro-testing"),
-			]
+			],
 		),
-	]
+	],
 )
 
 package.dependencies += [

@@ -5,7 +5,7 @@ struct StubDefaultMacro: PeerMacro {
 	static func expansion(
 		of attribute: AttributeSyntax,
 		providingPeersOf declaration: some DeclSyntaxProtocol,
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [DeclSyntax] {
 		[]
 	}
@@ -14,7 +14,7 @@ struct StubDefaultMacro: PeerMacro {
 		of attribute: AttributeSyntax,
 		providingPeersOf declaration: some DeclSyntaxProtocol,
 		conformingTo protocols: [TypeSyntax],
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [DeclSyntax] {
 		try expansion(of: attribute, providingPeersOf: declaration, in: context)
 	}

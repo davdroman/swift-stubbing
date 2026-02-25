@@ -100,7 +100,7 @@ struct StubbingTests {
 			profilePicture: Data([0x01, 0x02]),
 			website: #require(URL(string: "https://buddy.example")),
 			owner: owner,
-			bestFriend: friend
+			bestFriend: friend,
 		)
 
 		#expect(dog.name == "Buddy")

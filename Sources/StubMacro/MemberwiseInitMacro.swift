@@ -5,7 +5,7 @@ struct MemberwiseInitMacro: MemberMacro {
 	static func expansion(
 		of attribute: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [DeclSyntax] {
 		let typeContext = try TypeContext(declaration: declaration, macroName: "@MemberwiseInit")
 		let storedProperties = try typeContext.storedProperties()
@@ -15,14 +15,14 @@ struct MemberwiseInitMacro: MemberMacro {
 
 		let configuration = try MemberwiseInitConfiguration(
 			attribute: attribute,
-			typeAccess: typeContext.accessModifier
+			typeAccess: typeContext.accessModifier,
 		)
 		return [
 			DeclSyntax(
 				MemberBuilder.makeInitializer(
 					access: configuration.access,
-					properties: storedProperties
-				)
+					properties: storedProperties,
+				),
 			),
 		]
 	}
@@ -31,7 +31,7 @@ struct MemberwiseInitMacro: MemberMacro {
 		of attribute: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
 		conformingTo protocols: [TypeSyntax],
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [DeclSyntax] {
 		try expansion(of: attribute, providingMembersOf: declaration, in: context)
 	}

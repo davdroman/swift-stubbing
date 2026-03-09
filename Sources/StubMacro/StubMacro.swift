@@ -1,29 +1,30 @@
 import Foundation
 import SwiftDiagnostics
 import SwiftSyntax
+import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 struct StubMacro: MemberMacro {
 	static func expansion(
 		of attribute: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [DeclSyntax] {
 		let typeContext = try TypeContext(declaration: declaration, macroName: "@Stub")
 		let configuration = try StubConfiguration(
 			attribute: attribute,
-			typeAccess: typeContext.accessModifier
+			typeAccess: typeContext.accessModifier,
 		)
 		let storedProperties = try typeContext.storedProperties()
 
 		let stubTexts = MemberBuilder.makeStubTexts(
 			access: configuration.stubAccess,
 			typeName: typeContext.typeNameDescription,
-			properties: storedProperties
+			properties: storedProperties,
 		)
 		return try ConditionalTextBuilder.makeDecls(
 			stubTexts,
-			selection: configuration.buildConfigurations
+			selection: configuration.buildConfigurations,
 		)
 	}
 
@@ -31,7 +32,7 @@ struct StubMacro: MemberMacro {
 		of attribute: AttributeSyntax,
 		providingMembersOf declaration: some DeclGroupSyntax,
 		conformingTo protocols: [TypeSyntax],
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [DeclSyntax] {
 		try expansion(of: attribute, providingMembersOf: declaration, in: context)
 	}
@@ -43,18 +44,18 @@ extension StubMacro: ExtensionMacro {
 		attachedTo declaration: some DeclGroupSyntax,
 		providingExtensionsOf type: some TypeSyntaxProtocol,
 		conformingTo protocols: [TypeSyntax],
-		in context: some MacroExpansionContext
+		in context: some MacroExpansionContext,
 	) throws -> [ExtensionDeclSyntax] {
 		let typeContext = try TypeContext(declaration: declaration, macroName: "@Stub")
 		let configuration = try StubConfiguration(
 			attribute: attribute,
-			typeAccess: typeContext.accessModifier
+			typeAccess: typeContext.accessModifier,
 		)
 		let typeName = type.trimmedDescription
 		let extensionDecl = try MemberBuilder.makeValuesExtension(
 			access: configuration.stubAccess,
 			typeName: typeName,
-			selection: configuration.buildConfigurations
+			selection: configuration.buildConfigurations,
 		)
 		return [extensionDecl]
 	}
@@ -103,12 +104,12 @@ struct TypeContext {
 			guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else { continue }
 			guard let type = binding.typeAnnotation?.type else {
 				throw MacroExpansionErrorMessage(
-					"@Stub requires explicit type annotations for stored property '\(pattern.identifier.text)'."
+					"@Stub requires explicit type annotations for stored property '\(pattern.identifier.text)'.",
 				)
 			}
 
 			let defaultValue = try variable.attributes.stubDefaultValue(
-				for: pattern.identifier.text
+				for: pattern.identifier.text,
 			)
 
 			properties.append(
@@ -116,8 +117,8 @@ struct TypeContext {
 					name: pattern.identifier.text,
 					type: type,
 					defaultValue: defaultValue,
-					initializerDefault: binding.initializer?.value
-				)
+					initializerDefault: binding.initializer?.value,
+				),
 			)
 		}
 
@@ -130,7 +131,7 @@ struct TypeContext {
 
 	private static func qualifiedTypeName(
 		from declaration: some DeclGroupSyntax,
-		named baseName: String
+		named baseName: String,
 	) -> String {
 		let ancestorNames = ancestorTypeNames(startingAt: Syntax(declaration).parent)
 		guard !ancestorNames.isEmpty else {
@@ -270,7 +271,7 @@ struct BuildConfigurationSelection {
 	private func merging(with other: BuildConfigurationSelection) -> BuildConfigurationSelection {
 		BuildConfigurationSelection(
 			debug: includesDebug || other.includesDebug,
-			release: includesRelease || other.includesRelease
+			release: includesRelease || other.includesRelease,
 		)
 	}
 
@@ -333,7 +334,7 @@ enum MemberBuilder {
 	static func makeStubTexts(
 		access: AccessModifier,
 		typeName: String,
-		properties: [StoredProperty]
+		properties: [StoredProperty],
 	) -> [String] {
 		let staticStub = stubFunctionText(
 			access: access,
@@ -341,13 +342,13 @@ enum MemberBuilder {
 			returnType: typeName,
 			callType: typeName,
 			indentation: "",
-			parentTypeName: typeName
+			parentTypeName: typeName,
 		)
 		let instanceStub = instanceStubFunctionText(
 			access: access,
 			typeName: typeName,
 			properties: properties,
-			indentation: ""
+			indentation: "",
 		)
 
 		return [staticStub, instanceStub]
@@ -356,7 +357,7 @@ enum MemberBuilder {
 	static func makeValuesExtension(
 		access: AccessModifier,
 		typeName: String,
-		selection: BuildConfigurationSelection
+		selection: BuildConfigurationSelection,
 	) throws -> ExtensionDeclSyntax {
 		let accessText = access.sourceText
 		let helperBlock = """
@@ -371,11 +372,11 @@ enum MemberBuilder {
 		let wrappedBlock = try ConditionalTextBuilder.wrap(
 			helperBlock,
 			selection: selection,
-			indentation: "\t"
+			indentation: "\t",
 		)
 
 		return try ExtensionDeclSyntax(
-			"extension \(raw: typeName) {\n\(raw: wrappedBlock)\n}\n"
+			"extension \(raw: typeName) {\n\(raw: wrappedBlock)\n}\n",
 		)
 	}
 
@@ -385,7 +386,7 @@ enum MemberBuilder {
 		returnType: String,
 		callType: String,
 		indentation: String,
-		parentTypeName: String
+		parentTypeName: String,
 	) -> String {
 		let accessText = access.sourceText
 		let parameterIndent = indentation + "\t"
@@ -538,7 +539,7 @@ enum MemberBuilder {
 		access: AccessModifier,
 		typeName: String,
 		properties: [StoredProperty],
-		indentation: String
+		indentation: String,
 	) -> String {
 		let accessText = access.sourceText
 		let parameterIndent = indentation + "\t"
@@ -586,19 +587,19 @@ enum MemberBuilder {
 private enum ConditionalTextBuilder {
 	static func makeDecl(
 		_ content: String,
-		selection: BuildConfigurationSelection
+		selection: BuildConfigurationSelection,
 	) throws -> DeclSyntax {
 		let wrapped = try wrap(
 			content,
 			selection: selection,
-			indentation: ""
+			indentation: "",
 		)
 		return DeclSyntax("\n\(raw: wrapped)\n")
 	}
 
 	static func makeDecls(
 		_ contents: [String],
-		selection: BuildConfigurationSelection
+		selection: BuildConfigurationSelection,
 	) throws -> [DeclSyntax] {
 		switch (selection.includesDebug, selection.includesRelease) {
 		case (true, true):
@@ -618,7 +619,7 @@ private enum ConditionalTextBuilder {
 	static func wrap(
 		_ content: String,
 		selection: BuildConfigurationSelection,
-		indentation: String
+		indentation: String,
 	) throws -> String {
 		switch (selection.includesDebug, selection.includesRelease) {
 		case (true, true):
@@ -672,13 +673,13 @@ extension AttributeListSyntax {
 				let expression = arguments.first?.expression
 			else {
 				throw MacroExpansionErrorMessage(
-					"@StubDefault applied to '\(propertyName)' must supply exactly one value."
+					"@StubDefault applied to '\(propertyName)' must supply exactly one value.",
 				)
 			}
 
 			if value != nil {
 				throw MacroExpansionErrorMessage(
-					"Property '\(propertyName)' declares @StubDefault more than once."
+					"Property '\(propertyName)' declares @StubDefault more than once.",
 				)
 			}
 

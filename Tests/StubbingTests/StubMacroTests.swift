@@ -1,5 +1,7 @@
 #if canImport(StubMacro)
 import MacroTesting
+import SnapshotTesting
+import SwiftSyntax
 import Testing
 @testable import StubMacro
 
@@ -7,8 +9,8 @@ import Testing
 	.macros(
 		["Stub": StubMacro.self],
 		indentationWidth: .tab,
-		record: .missing
-	)
+		record: .missing,
+	),
 )
 struct StubMacroTests {
 	@Test func generatesStubHelpers() {
